@@ -18,7 +18,7 @@ internal/
 
 ### Phase 1 — CLI & Directory Walking
 
-- Parse all flags (use `pflag` or stdlib `flag`) mirroring the original's `-b`, `-c`, `-d`, `-e`, `-f`, `-w`, `--flatten`, `--no-push/pull/upstream/uncommitted/untracked/stashes`, `--throttle`, `--version`
+- Parse all flags (use `pflag` or stdlib `flag`) mirroring the original's `-b`, `-c`, `-d`, `-e`, `-f`, `-w`, `--flatten`, `--json`, `--no-push/pull/upstream/uncommitted/untracked/stashes`, `--throttle`, `--version`
 - Walk directories with `filepath.WalkDir`, respecting `--depth` / `--no-depth` and following symlinks (`-L` behavior)
 - Detect `.git/` dirs to identify repos
 
@@ -49,6 +49,11 @@ Plus safety checks:
 
 - ANSI color (auto-detect TTY via `os.Stdout.Fd()` + `isatty`, force with `-c`)
 - Normal mode (one line per repo) and `--flatten` (one line per status)
+- `--json` mode — JSONL output (one JSON object per repo per line), with fields:
+  - `path`, `branch`, `ok` (bool), `needs_push` / `needs_pull` / `needs_upstream` (arrays of branch names), `uncommitted` (bool), `untracked` (bool), `stashes` (int)
+  - Error cases emit `{"path":"...","error":"unsafe_ownership|not_a_repo|locked"}`
+  - Respects `--no-*` filters and `-e`/`--no-ok` exclusion
+  - Use `encoding/json` for proper escaping (replaces the shell `json_escape` function)
 - Branch display (`-b`), `--no-ok` filtering
 - Match the original color scheme:
 
@@ -94,6 +99,7 @@ Plus safety checks:
 | `-f`                 | off     | Run `git fetch -q` before checking                       |
 | `--throttle SEC`     | `0`     | Sleep between repos (only with `-f`)                     |
 | `--flatten`          | off     | One status per output line                               |
+| `--json`             | off     | Output each repo as a JSON object (JSONL, one per line)  |
 | `-w`                 | off     | Warn about non-git-repo directories                      |
 | `--no-push`          | off     | Suppress "Needs push"                                    |
 | `--no-pull`          | off     | Suppress "Needs pull"                                    |
